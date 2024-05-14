@@ -1,0 +1,74 @@
+{
+	"name": "removeduplicaterowsdf",
+	"properties": {
+		"type": "MappingDataFlow",
+		"typeProperties": {
+			"sources": [
+				{
+					"dataset": {
+						"referenceName": "emp1",
+						"type": "DatasetReference"
+					},
+					"name": "Empsource"
+				},
+				{
+					"dataset": {
+						"referenceName": "emp2",
+						"type": "DatasetReference"
+					},
+					"name": "newempsource"
+				}
+			],
+			"sinks": [
+				{
+					"dataset": {
+						"referenceName": "removeduplicatesoutput",
+						"type": "DatasetReference"
+					},
+					"name": "sink1"
+				}
+			],
+			"transformations": [
+				{
+					"name": "union1"
+				},
+				{
+					"name": "removeduplicaterows"
+				},
+				{
+					"name": "sort1"
+				}
+			],
+			"scriptLines": [
+				"source(output(",
+				"          ID as string,",
+				"          {First Name} as string,",
+				"          Gender as string,",
+				"          Team as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> Empsource",
+				"source(output(",
+				"          ID as string,",
+				"          {First Name} as string,",
+				"          Gender as string,",
+				"          Team as string",
+				"     ),",
+				"     allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     ignoreNoFilesFound: false) ~> newempsource",
+				"Empsource, newempsource union(byName: true)~> union1",
+				"union1 aggregate(groupBy(ID),",
+				"     each(match(name!='ID'), $$ = first($$))) ~> removeduplicaterows",
+				"removeduplicaterows sort(asc(ID, true)) ~> sort1",
+				"sort1 sink(allowSchemaDrift: true,",
+				"     validateSchema: false,",
+				"     partitionFileNames:['Allemp.csv'],",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true,",
+				"     partitionBy('hash', 1)) ~> sink1"
+			]
+		}
+	}
+}
